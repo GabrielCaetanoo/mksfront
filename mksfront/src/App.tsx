@@ -1,21 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from 'axios';
 import { faClose, faShoppingCart, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { Container, 
-         Header, 
-         TextoEsquerda, 
-         Carrinho, 
-         Footer, 
-         ItemCompra, 
-         Centro, 
-         LinhaItensCompra, 
-         BotaoCompra,
-         BotaoCompra2,
-         CarrinhoMenuContainer, BotaoCompra2Background, BotaoExcluir,ProdutoCarrinho2
-         } from './AppStyled';
+import { Container, Header, TextoEsquerda, Carrinho, Footer, ItemCompra, Centro, LinhaItensCompra, BotaoCompra, BotaoCompra2, CarrinhoMenuContainer, BotaoCompra2Background, BotaoExcluir, ProdutoCarrinho2 } from './AppStyled';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
-
 
 interface Produto {
   id: number;
@@ -24,23 +11,27 @@ interface Produto {
   photo: string;
   price: number;
   comprado: boolean;
-  quantidade: number; // Nova propriedade de quantidade
+  quantidade: number; 
 }
 
-// Definição do componente ProdutoCarrinho
-const ProdutoCarrinho: React.FC<{ produto: Produto; onExcluir: (produtoId: number) => void }> = ({ produto, onExcluir }) => {
+// Componente para exibir cada item no carrinho
+const ProdutoCarrinho: React.FC<{ produto: Produto; onExcluir: (produtoId: number) => void; onIncrementar: (produtoId: number) => void; onDecrementar: (produtoId: number) => void; }> = ({ produto, onExcluir, onIncrementar, onDecrementar }) => {
   return (
     <div>
       <ProdutoCarrinho2>
-      <img src={produto.photo} alt={produto.name} />
+        <img src={produto.photo} alt={produto.name} />
         <h3>{produto.name}</h3>
-        <p>Qtd: {produto.quantidade}</p>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="quantidade-btn" onClick={() => onDecrementar(produto.id)}>-</button>
+          <p style={{ margin: '0 10px' }}>{produto.quantidade}</p>
+          <button className="quantidade-btn" onClick={() => onIncrementar(produto.id)}>+</button>
+        </div>
         <p>Preço: ${produto.price}</p>
         <BotaoExcluir onClick={() => onExcluir(produto.id)}>
           <FontAwesomeIcon icon={faTimes} /> {/* Ícone de excluir */}
         </BotaoExcluir>
       </ProdutoCarrinho2>
-      </div>
+    </div>
   );
 };
 
@@ -53,10 +44,9 @@ const App: React.FC = () => {
     const fetchProducts = async () => {
       try {
         const response = await axios.get('https://mks-frontend-challenge-04811e8151e6.herokuapp.com/api/v1/products?page=1&rows=8&sortBy=id&orderBy=DESC');
-        const produtosData: Produto[] = response.data.products.map((produto: any) => ({ ...produto, comprado: false, price: parseFloat(produto.price) }));
+        const produtosData: Produto[] = response.data.products.map((produto: any) => ({ ...produto, comprado: false, price: parseFloat(produto.price), quantidade: 1 }));
         setProdutos(produtosData);
-        // Calculate initial total when loading products
-        const totalInicial = produtos.reduce((acc, produto) => {
+        const totalInicial = produtosData.reduce((acc, produto) => {
           if (produto.comprado) {
             return acc + produto.price;
           }
@@ -77,42 +67,74 @@ const App: React.FC = () => {
   const handleCloseCarrinho = () => {
     setCarrinhoAberto(false);
   };
-  
-  const handleIncrementQuantidade = (produtoIndex: number) => {
-    const novosProdutos = [...produtos];
-    novosProdutos[produtoIndex].quantidade += 1;
+
+  const handleIncrementQuantidade = (produtoId: number) => {
+    const novosProdutos = produtos.map(produto => {
+      if (produto.id === produtoId && produto.comprado) {
+        return { ...produto, quantidade: produto.quantidade + 1 };
+      }
+      return produto;
+    });
     setProdutos(novosProdutos);
+
+    // Recalcular o preço total
+    const totalAtualizado = novosProdutos
+      .filter(produto => produto.comprado)
+      .reduce((acc, produto) => acc + produto.price * produto.quantidade, 0);
+    setTotal(totalAtualizado);
   };
-  
-  const handleDecrementQuantidade = (produtoIndex: number) => {
-    const novosProdutos = [...produtos];
-    if (novosProdutos[produtoIndex].quantidade > 1) {
-      novosProdutos[produtoIndex].quantidade -= 1;
-      setProdutos(novosProdutos);
-    }
+
+  const handleDecrementQuantidade = (produtoId: number) => {
+    const novosProdutos = produtos.map(produto => {
+      if (produto.id === produtoId && produto.comprado && produto.quantidade > 1) {
+        return { ...produto, quantidade: produto.quantidade - 1 };
+      }
+      return produto;
+    });
+    setProdutos(novosProdutos);
+
+    // Recalcular o preço total
+    const totalAtualizado = novosProdutos
+      .filter(produto => produto.comprado)
+      .reduce((acc, produto) => acc + produto.price * produto.quantidade, 0);
+    setTotal(totalAtualizado);
   };
 
   const handleCompra = (produtoIndex: number) => {
     const novosProdutos = [...produtos];
     novosProdutos[produtoIndex].comprado = true;
-    novosProdutos[produtoIndex].quantidade = 1; // Definir a quantidade como 1 ao comprar
     setProdutos(novosProdutos);
-  
+
     // Recalcular o total ao adicionar um produto
     const totalAtualizado = novosProdutos
       .filter(produto => produto.comprado)
       .reduce((acc, produto) => acc + produto.price * produto.quantidade, 0);
-  
+
     setTotal(totalAtualizado);
   };
 
   const handleExcluir = (produtoId: number) => {
-    // Lógica para excluir o produto com o ID fornecido
-    // Por exemplo, você pode filtrar os produtos para remover o produto com o ID correspondente
-    const novosProdutos = produtos.filter(produto => produto.id !== produtoId);
-    setProdutos(novosProdutos);
-  };
+    // Encontrar o produto que será excluído
+    const produtoExcluido = produtos.find(produto => produto.id === produtoId);
+    
+    // Se o produto existir e estiver marcado como comprado, atualizar o estado dos produtos
+    if (produtoExcluido && produtoExcluido.comprado) {
+      const novosProdutos = produtos.map(produto => {
+        if (produto.id === produtoId) {
+          return { ...produto, comprado: false }; // Altera para 'comprado: false' ao invés de remover
+        }
+        return produto;
+      });
   
+      // Recalcular o preço total, excluindo o preço do produto excluído
+      const totalAtualizado = novosProdutos
+        .filter(produto => produto.comprado)
+        .reduce((acc, produto) => acc + produto.price * produto.quantidade, 0);
+    
+      setProdutos(novosProdutos);
+      setTotal(totalAtualizado);
+    }
+  };
 
   return (
     <>
@@ -128,7 +150,8 @@ const App: React.FC = () => {
       </Container>
 
       <Centro>
-        <LinhaItensCompra> 
+        <LinhaItensCompra>
+          {/* Primeira linha de produtos */}
           {produtos.slice(0, 4).map((produto, index) => (
             <ItemCompra key={index}>
               <div>
@@ -149,6 +172,7 @@ const App: React.FC = () => {
         </LinhaItensCompra>
 
         <LinhaItensCompra>
+          {/* Segunda linha de produtos */}
           {produtos.slice(4, 8).map((produto, index) => (
             <ItemCompra key={index}>
               <div>
@@ -168,40 +192,48 @@ const App: React.FC = () => {
           ))}
         </LinhaItensCompra>
 
+        {/* Carrinho de compras */}
         {carrinhoAberto && (
-  <CarrinhoMenuContainer>
-    <h2>Carrinho <br/>de Compras
-      <FontAwesomeIcon
-        icon={faClose}
-        onClick={handleCloseCarrinho}
-        style={{
-          cursor: 'pointer',
-          color: 'white',
-          border: '1px solid black',
-          borderRadius: '50%',
-          padding: '5px',
-          backgroundColor: 'black'
-        }}
-      />
-    </h2>
-    <ul style={{ listStyle: 'none', padding: '0', margin: '0' }}>
-    {produtos
-  .filter(produto => produto.comprado)
-  .map((produto, index) => (
-    <ProdutoCarrinho key={index} produto={produto} onExcluir={() => handleExcluir(produto.id)} />
-  ))}
-</ul>
-    <div style={{ fontSize: '35px' }}>Total: ${total.toFixed(2)}</div>
-    <BotaoCompra2Background>
-      <BotaoCompra2 onClick={handleCloseCarrinho}>Finalizar Compra</BotaoCompra2>
-    </BotaoCompra2Background>
-  </CarrinhoMenuContainer>
-)}
-              <Footer>MKS Sistemas &copy; Todos os direitos reservados.</Footer>
+          <CarrinhoMenuContainer>
+            <h2>
+              Carrinho <br /> de Compras
+              <FontAwesomeIcon
+                icon={faClose}
+                onClick={handleCloseCarrinho}
+                style={{
+                  cursor: "pointer",
+                  color: "white",
+                  border: "1px solid black",
+                  borderRadius: "50%",
+                  padding: "5px",
+                  backgroundColor: "black",
+                }}
+              />
+            </h2>
+            <ul style={{ listStyle: "none", padding: "0", margin: "0" }}>
+              {produtos
+                .filter((produto) => produto.comprado)
+                .map((produto, index) => (
+                  <ProdutoCarrinho
+                    key={index}
+                    produto={produto}
+                    onExcluir={handleExcluir}
+                    onIncrementar={handleIncrementQuantidade}
+                    onDecrementar={handleDecrementQuantidade}
+                  />
+                ))}
+            </ul>
+            <div style={{ fontSize: "35px" }}>Total: ${total.toFixed(2)}</div>
+            <div className="bottomButtonContainer">
+              <BotaoCompra2 onClick={handleCloseCarrinho}>Finalizar Compra</BotaoCompra2>
+            </div>
+          </CarrinhoMenuContainer>
+        )}
       </Centro>
 
-
+      <Footer>MKS Sistemas &copy; Todos os direitos reservados.</Footer>
     </>
   );
-}
+};
+
 export default App;

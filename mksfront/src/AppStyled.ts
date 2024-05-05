@@ -120,26 +120,35 @@ export const BotaoCompra = styled.button`
 
   
 export const CarrinhoMenuContainer = styled.div`
-position: fixed;
-top: 0;
-right: 0;
-width: 500px; /* Define a largura do contêiner para ocupar metade da largura da tela */
-max-height: calc(100vh - 50px); /* Altura máxima igual à altura da janela menos o espaço do cabeçalho */
-background-color: rgb(15, 82, 186);
-box-sizing: border-box;
-box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-z-index: 9999;
-color: white;
-overflow-y: auto;
-
-h2 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0; /* Alterado para ocupar toda a altura */
+  width: 500px; /* Define a largura do contêiner */
+  background-color: rgb(15, 82, 186);
+  box-sizing: border-box;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  color: white;
+  overflow-y: auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 15px;
-  font-size: 30px;
-  font-family: bold;
-}
+  flex-direction: column; /* Para que os elementos fiquem em coluna */
+
+  h2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    font-size: 30px;
+    font-family: bold;
+  }
+
+  .bottomButtonContainer {
+    margin-top: auto; /* Empurra a div para a parte inferior */
+    padding: 15px; /* Adiciona um espaçamento interno */
+    background-color: black;
+    text-align: center;
+  }
 `;
 
 export const BotaoCompra2Background = styled.div`
@@ -158,17 +167,16 @@ align-items: center; /* Centraliza o conteúdo verticalmente */
 `;
 
 export const BotaoCompra2 = styled.button`
-width: 100%;
-padding: 50px; /* Aumentei o padding para melhorar a aparência */
-background-color: black;
-color: white;
-border: none;
-cursor: pointer;
-font-weight: bold;
-font-size: 30px;
-border-radius: 0; /* Removi a borda do botão */
-flex-grow: 1; /* Para ocupar todo o espaço disponível na div */
-outline: none; /* Remover a borda de foco */
+  width: 100%;
+  padding: 20px; /* Ajustei o padding para melhorar a aparência */
+  background-color: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 20px; /* Ajustei o tamanho da fonte */
+  border-radius: 0; /* Removi a borda do botão */
+  outline: none; /* Remover a borda de foco */
 `;
 
 export const ProdutoCarrinho2 = styled.div`
@@ -179,8 +187,6 @@ export const ProdutoCarrinho2 = styled.div`
   margin-bottom: 5px;
   display: flex;
   gap: 20px;
-  
-  
 
   img {
     
